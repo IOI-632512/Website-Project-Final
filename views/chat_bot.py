@@ -31,8 +31,28 @@ if query := st.chat_input("Enter your question ..."):
 
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        response = model.generate_content(query).text
 
+        history = ""
+        for msg in st.session_state.messages:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            history += f"{role}: {msg['content']}\n"
+
+        # Create prompt with history + current query
+        prompt = history + f"User: {query}\nAssistant:"
+
+        # Generate response from model
+        response_obj = model.generate_content(prompt)
+
+        # Handle model output
+        if response_obj.parts:
+            # Collect the text parts
+            response = "".join([part.text for part in response_obj.parts])
+        else:
+            # Handle blocked response
+            response = (
+                "⚠️ Response blocked: The model detected potentially copyrighted content "
+                "and did not return any output. Please try rephrasing your prompt."
+            )
         full_response = ""
         for char in response:
             full_response += char
